@@ -1,43 +1,43 @@
-﻿sample,original,bird,site,species,control,mock,,,,,,,,
-2,479,CHSP05,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-8,473,CHSP03,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-20,493,CHSP08,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-22,500,CHSP11,Preen,Chipping Sparrow,no,no,,,,,,,,
-39,475,CHSP04,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-93,476,CHSP04,Preen,Chipping Sparrow,no,no,,,,,,,,
-103,480,CHSP05,Preen,Chipping Sparrow,no,no,,,,,,,,
-123,472,CHSP02,Preen,Chipping Sparrow,no,no,,,,,,,,
-180,499,CHSP11,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-184,495,CHSP09,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-186,501,CHSP12,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-207,492,CHSP07,Preen,Chipping Sparrow,no,no,,,,,,,,
-214,497,CHSP10,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-237,482,CHSP06,Preen,Chipping Sparrow,no,no,,,,,,,,
-262,471,CHSP02,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-283,494,CHSP08,Preen,Chipping Sparrow,no,no,,,,,,,,
-298,474,CHSP03,Preen,Chipping Sparrow,no,no,,,,,,,,
-319,496,CHSP09,Preen,Chipping Sparrow,no,no,,,,,,,,
-326,498,CHSP10,Preen,Chipping Sparrow,no,no,,,,,,,,
-329,502,CHSP12,Preen,Chipping Sparrow,no,no,,,,,,,,
-372,491,CHSP07,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-377,481,CHSP06,Cloaca,Chipping Sparrow,no,no,,,,,,,,
-Blk1,,,,,yes,no,,,,,,,,
-Blk2,,,,,yes,no,,,,,,,,
-Blk3,,,,,yes,no,,,,,,,,
-Blk4,,,,,yes,no,,,,,,,,
-Blk5,,,,,yes,no,,,,,,,,
-Blk6,,,,,yes,no,,,,,,,,
-Blk7,,,,,yes,no,,,,,,,,
-Blk8,,,,,yes,no,,,,,,,,
-Blk9,,,,,yes,no,,,,,,,,
-Blk10,,,,,yes,no,,,,,,,,
-Blk11,,,,,yes,no,,,,,,,,
-Blk12,,,,,yes,no,,,,,,,,
-WaterNegA,,,,,yes,no,,,,,,,,
-WaterNegB,,,,,yes,no,,,,,,,,
-WaterNegC,,,,,yes,no,,,,,,,,
-WaterNegD,,,,,yes,no,,,,,,,,
-ZymoPosA,,,,,yes,yes,,,,,,,,
-ZymoPosB,,,,,yes,yes,,,,,,,,
-ZymoPosC,,,,,yes,yes,,,,,,,,
-ZymoPosD,,,,,yes,yes,,,,,,,,
+﻿sample,original,bird,site,species,control,mock
+2,479,CHSP05,Cloaca,Chipping Sparrow,no,no
+8,473,CHSP03,Cloaca,Chipping Sparrow,no,no
+20,493,CHSP08,Cloaca,Chipping Sparrow,no,no
+22,500,CHSP11,Preen,Chipping Sparrow,no,no
+39,475,CHSP04,Cloaca,Chipping Sparrow,no,no
+93,476,CHSP04,Preen,Chipping Sparrow,no,no
+103,480,CHSP05,Preen,Chipping Sparrow,no,no
+123,472,CHSP02,Preen,Chipping Sparrow,no,no
+180,499,CHSP11,Cloaca,Chipping Sparrow,no,no
+184,495,CHSP09,Cloaca,Chipping Sparrow,no,no
+186,501,CHSP12,Cloaca,Chipping Sparrow,no,no
+207,492,CHSP07,Preen,Chipping Sparrow,no,no
+214,497,CHSP10,Cloaca,Chipping Sparrow,no,no
+237,482,CHSP06,Preen,Chipping Sparrow,no,no
+262,471,CHSP02,Cloaca,Chipping Sparrow,no,no
+283,494,CHSP08,Preen,Chipping Sparrow,no,no
+298,474,CHSP03,Preen,Chipping Sparrow,no,no
+319,496,CHSP09,Preen,Chipping Sparrow,no,no
+326,498,CHSP10,Preen,Chipping Sparrow,no,no
+329,502,CHSP12,Preen,Chipping Sparrow,no,no
+372,491,CHSP07,Cloaca,Chipping Sparrow,no,no
+377,481,CHSP06,Cloaca,Chipping Sparrow,no,no
+Blk1,,,,,yes,no
+Blk2,,,,,yes,no
+Blk3,,,,,yes,no
+Blk4,,,,,yes,no
+Blk5,,,,,yes,no
+Blk6,,,,,yes,no
+Blk7,,,,,yes,no
+Blk8,,,,,yes,no
+Blk9,,,,,yes,no
+Blk10,,,,,yes,no
+Blk11,,,,,yes,no
+Blk12,,,,,yes,no
+WaterNegA,,,,,yes,no
+WaterNegB,,,,,yes,no
+WaterNegC,,,,,yes,no
+WaterNegD,,,,,yes,no
+ZymoPosA,,,,,no,yes
+ZymoPosB,,,,,no,yes
+ZymoPosC,,,,,no,yes
+ZymoPosD,,,,,no,yes
