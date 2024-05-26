@@ -1,0 +1,450 @@
+---
+title: "PhyloseqMRAManuscript"
+author: "Tricia"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+##Load required packages
+```{r Load Required Packages, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(here)
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(plyr)
+library(decontam)
+library(ANCOMBC) #differential taxa expression
+library(MicEco) #psvenn
+library(BiMiCo) #rmnonbac
+library(ggpubr) #statcomparemeans
+```
+
+##Load taxa and seqtab files to start here
+```{r Load DADA2 files}
+load("../RData/taxa.RData")
+load("../RData/seqtab.nochim.RData")
+```
+
+##import metadata
+```{r Import Metadata}
+metadata<-read.csv("../metadata.csv", header=TRUE, row.names = 1)
+```
+
+##Create phyloseq object
+```{r Create Phyloseq Object}
+#make sure the seqtab.nochim and taxa objects are loaded
+physeq <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(metadata), 
+               tax_table(taxa))
+physeq
+```
+
+##inspect library sizes
+```{r Inspect Library Size}
+df <- as.data.frame(sample_data(physeq)) # Put sample_data into a ggplot-friendly data.frame
+df$LibrarySize <- sample_sums(physeq)
+df <- df[order(df$LibrarySize),]
+df$Index <- seq(nrow(df))
+ggplot(data=df, aes(x=Index, y=LibrarySize, color=control)) + geom_point()
+```
+
+##identify contaminants
+```{r Identify Contaminants at Higher Freq in Negative Controls, warning=FALSE}
+sample_data(physeq)$is.neg <- sample_data(physeq)$control == "yes"
+contamdf.prev <- isContaminant(physeq, method="prevalence", neg="is.neg", threshold=0.5) #identify contaminants in higher frequency in negative controls
+table(contamdf.prev$contaminant)
+head(which(contamdf.prev$contaminant))
+```
+##remove control samples
+```{r Remove Control Samples}
+# Make phyloseq object of presence-absence in negative controls and true samples
+physeq.pa <- transform_sample_counts(physeq, function(abund) 1*(abund>0))
+physeq.pa.neg <- prune_samples(sample_data(physeq.pa)$control == "yes", physeq.pa)
+physeq <- prune_samples(sample_data(physeq.pa)$control == "no", physeq.pa) #this will contain positives
+physeq
+```
+
+##graph controls
+```{r Graph Controls}
+df.pa <- data.frame(pa.pos=taxa_sums(physeq), pa.neg=taxa_sums(physeq.pa.neg),
+                      contaminant=contamdf.prev$contaminant)
+ggplot(data=df.pa, aes(x=pa.neg, y=pa.pos, color=contaminant)) + geom_point() +
+  xlab("Prevalence (Negative Controls)") + ylab("Prevalence (True Samples)")
+```
+
+##remove contaminants
+```{r Remove Contaminants}
+physeq <- prune_taxa(!contamdf.prev$contaminant, physeq)
+physeq
+```
+##Remove mock community
+```{r Remove Mock Community}
+physeq <- subset_samples(physeq, mock != "yes") 
+physeq
+```
+
+##Remove the sequence itself and replace with ASV
+```{r Separate Sequence Out}
+dna <- Biostrings::DNAStringSet(taxa_names(physeq))
+names(dna) <- taxa_names(physeq)
+physeq <- merge_phyloseq(physeq, dna)
+taxa_names(physeq) <- paste0("ASV", seq(ntaxa(physeq)))
+physeq
+```
+
+##remove mitochondria and chloroplast matches. 
+```{r Remove Mito and Chloro}
+physeq <- physeq %>% subset_taxa( Family!= "Mitochondria" | is.na(Family) & Order!="Chloroplast" | is.na(Order) ) 
+physeq
+```
+
+##remove all non bacterial sequences
+```{r Remove Non-Bact}
+physeq<-rm_nonbac(physeq)
+physeq
+```
+
+##save physeq object as a file
+```{r Save Phyloseq Object}
+##save physeq object as R file
+save(physeq, file="../RData/physeq.RData")
+```
+
+
+##load physeq
+```{r Load Phyloseq Object}
+load("../RData/physeq.RData")
+```
+
+##Alpha Diversity based on site with stats
+```{r Alpha Diversity Graph, message=FALSE, warning=FALSE}
+p=plot_richness(physeq,x="site", measures=c("Observed","Simpson", "Shannon"))
+BAR <- p + geom_boxplot(data = p$data, aes(x = site, y = value, color = NULL), alpha = 0.1) + theme(axis.title = element_text(face="bold"))
+
+bar <- BAR + stat_compare_means(aes(label = ifelse(..p.signif.. < 0.05, ..p.signif.., "")), method = "wilcox.test", label.x = 1.3, label.y = Inf)
+
+barsite<-bar+ stat_compare_means(aes(label = ..p.signif..), method = "wilcox.test",  label.x = 1.5)
+
+barsite
+```
+
+##export tiff with 300dpi
+```{r Export Alpha Diversity Graph}
+ggsave(
+  filename="../figures/Figure01AlphaDiv.tiff",
+  plot = barsite,
+  width = 200,
+  height = 200,
+  units = c("mm"),
+  dpi = 300,
+)
+```
+
+##Export alpha diveristy
+```{r Export Alpha Diversity}
+alphadiv<-estimate_richness(physeq, measures=c("Observed", "Shannon", "Simpson"))
+write.csv(alphadiv, "../alphasheets/alpha_div.csv")
+```
+
+##add site info to alpha_div file and rename alphadiv import for normality testing
+```{r Import Alpha Diversity with Site Detail}
+meta<-read.csv("../alphasheets/alphadiv.csv")
+```
+
+##hist
+```{r Histograph of Alpha Div}
+par(mfrow = c(1, 3))
+hist(meta$Shannon, main="Shannon diversity", xlab="", breaks=10)
+hist(meta$Simpson, main="Simpson diversity", xlab="", breaks=10)
+hist(meta$Observed, main="Observed ASVs", xlab="", breaks=10)
+```
+
+##Test for normality (Shapiro)
+```{r Test for Normality}
+shapiro.test(meta$Shannon)
+shapiro.test(meta$Simpson)
+shapiro.test(meta$Observed) #normal
+```
+
+##Two factor tests
+```{r Two-factor Tests}
+##site
+wilcox.test(meta$Simpson ~ meta$site)
+t.test(meta$Observed ~ meta$site)
+wilcox.test(meta$Shannon ~ meta$site)
+```
+
+
+##Remove taxa with relative abundance <0.005%
+```{r Remove Low Abundance Taxa}
+minTotRelAbun = .00005
+x = taxa_sums(physeq)
+keepTaxa = (x / sum(x)) > minTotRelAbun
+physeqprune = prune_taxa(keepTaxa, physeq)
+physeqprune
+```
+
+##save physeq object as a file
+```{r Save PhyloseqPrune Object}
+##save physeq object as R file
+save(physeqprune, file="../RData/physeqprune.RData")
+```
+
+##load physeq
+```{r Load PhyloseqPrune Object}
+load("../RData/physeqprune.RData")
+```
+
+##Number of shared ASVs site (found in 50% or more) 
+```{r Identify Number of Shared ASVs}
+sitevenn=ps_venn(
+  physeqprune,
+  "site",
+  fraction = .50,
+  weight = FALSE,
+  relative = TRUE,
+  plot = TRUE
+)
+sitevenn
+```
+
+##List of shared ASVs species (found in 50% or more) t=0
+```{r List Shared ASVs}
+sitelist=ps_venn(
+  physeqprune,
+  "site",
+  fraction = .5,
+  weight = FALSE,
+  relative = TRUE,
+  plot = FALSE
+)
+sitelist
+
+# Extract the taxonomy table
+tax_table <- as.data.frame(tax_table(physeqprune))
+
+# Function to get genus and species for a list of ASVs
+get_genus_species_for_asvs <- function(asv_list, tax_table) {
+  # Subset the taxonomy table for the given ASVs
+  matched_taxa <- tax_table[rownames(tax_table) %in% asv_list, ]
+  
+  # Function to find the most specific identified taxonomic level
+  get_first_identified <- function(row) {
+    if (!is.na(row["Species"]) && row["Species"] != "" && row["Species"] != "unidentified" && !is.na(row["Genus"]) && row["Genus"] != "" && row["Genus"] != "unidentified") {
+      return(paste(row["Genus"], row["Species"], sep = " "))
+    } else if (!is.na(row["Genus"]) && row["Genus"] != "" && row["Genus"] != "unidentified") {
+      return(paste("Genus:", row["Genus"]))
+    } else {
+      tax_levels <- c("Family", "Order", "Class", "Phylum", "Kingdom")
+      for (col in tax_levels) {
+        if (!is.na(row[col]) && row[col] != "" && row[col] != "unidentified") {
+          return(paste(col, row[col], sep = ": "))
+        }
+      }
+    }
+    return("unidentified")
+  }
+  
+  # Apply the function to each row
+  matched_taxa$First_Identified_Taxa <- apply(matched_taxa, 1, get_first_identified)
+  
+  # Return the ASV and First_Identified_Taxa columns
+  return(data.frame(ASV = rownames(matched_taxa), First_Identified_Taxa = matched_taxa$First_Identified_Taxa))
+}
+
+# Get genus and species for each group in sitelist
+genus_species_cloaca <- get_genus_species_for_asvs(sitelist$Cloaca, tax_table)
+genus_species_preen <- get_genus_species_for_asvs(sitelist$Preen, tax_table)
+genus_species_cloaca_preen <- get_genus_species_for_asvs(sitelist$Cloaca__Preen, tax_table)
+
+# Save results to CSV files
+write.csv(genus_species_cloaca, "../venntaxa/taxa_cloaca.csv", row.names = FALSE)
+write.csv(genus_species_preen, "../venntaxa/taxa_preen.csv", row.names = FALSE)
+write.csv(genus_species_cloaca_preen, "../venntaxa/taxa_cloaca_preen.csv", row.names = FALSE)
+```
+
+##export tiff with 300dpi
+```{r Export Venn Diagram}
+ggsave(
+  filename="../figures/Figure02Venn.tiff",
+  plot = sitevenn,
+  width = 200,
+  height = 200,
+  units = c("mm"),
+  dpi = 300,
+  bg = "white"
+)
+```
+
+##Bray Curtis Calculation
+```{r Bray-Curtis Analysis, results='hide', message=FALSE, warning=FALSE}
+set.seed(777)
+dist = phyloseq::distance(physeqprune, method="bray", weighted=TRUE) #calculate Bray-Curtis dissimilarity
+ordination = ordinate(physeqprune, method="NMDS", distance=dist) #perform ordination on distance matrix
+```
+
+##Bray Curtis Site Plot
+```{r Plot ordination}
+braysite=plot_ordination(physeq, ordination, color="site") + 
+  theme_classic() +
+  theme(strip.background = element_blank()) + stat_ellipse(aes(group=site))
+braysite
+```
+
+##Bray Curtis Site Stats
+```{r Statistics on Bray-Curtis}
+adonis2(dist ~ sample_data(physeqprune)$site)
+```
+
+##Bray Curtis Species ANOSIM
+```{r}
+anosim <- data.frame(sample_data(physeqprune))
+anosim(dist, anosim$site, permutations=9999)
+```
+
+##export tiff with 300dpi
+```{r Export NMDS}
+ggsave(
+  filename="../figures/Figure03BetaDiv.tiff",
+  plot = braysite,
+  width = 250,
+  height = 150,
+  units = c("mm"),
+  dpi = 300,
+)
+```
+
+##Bar plots of Abundance per individual samples in site (Phylum-Merge <5%)
+```{r Graph of Phylum Abundance}
+physeq2 = filter_taxa(physeqprune, function(x) mean(x) > 0.05, TRUE)
+physeq3 = transform_sample_counts(physeq2, function(x) x / sum(x) )
+glom<-psmelt(physeq3)
+glom <- tax_glom(physeq3, taxrank = 'Phylum')
+data<-psmelt(glom)
+data$Phylum <- as.character(data$Phylum) 
+data$Phylum[data$Abundance < 0.05] <- "< 5% abund."
+medians <- ddply(data, ~Phylum, function(x) c(median=median(x$Abundance)))
+remainder <- medians[medians$median <= 0.05,]$Phylum
+data[data$Phylum %in% remainder,]$Phylum <- "< 5% abund."
+data$Phylum[data$Abundance < 0.05] <- "< 5% abund."
+spatial_plot <- ggplot(data=data, aes(x=bird, y=Abundance, fill=Phylum)) + 
+  facet_wrap(~site, scales = "free")
+barplotphylum<-spatial_plot + geom_bar(aes(), stat="identity", position="fill") + 
+  ggtitle("Phylum Abundance at Each Site") + 
+  theme (axis.text.x = element_text(angle=90), 
+         plot.title = element_text(size = 10, face = "bold", hjust = .5)) 
+barplotphylum
+```
+
+##export tiff with 300dpi
+```{r}
+ggsave(
+  filename="../figures/Figure00Barplot.tiff",
+  plot = barplotphylum,
+  width = 250,
+  height = 150,
+  units = c("mm"),
+  dpi = 300,
+)
+```
+
+##Bar plots of Abundance per individual samples in species (Order-Merge <5%)
+```{r}
+physeq2 = filter_taxa(physeqprune, function(x) mean(x) > 0.05, TRUE)
+physeq3 = transform_sample_counts(physeq2, function(x) x / sum(x) )
+glom<-psmelt(physeq3)
+glom <- tax_glom(physeq3, taxrank = 'Order')
+data<-psmelt(glom)
+data$Order <- as.character(data$Order) 
+data$Order[data$Abundance < 0.05] <- "< 5% abund."
+medians <- ddply(data, ~Order, function(x) c(median=median(x$Abundance)))
+remainder <- medians[medians$median <= 0.05,]$Order
+data[data$Order %in% remainder,]$Order <- "< 5% abund."
+data$Order[data$Abundance < 0.05] <- "< 5% abund."
+spatial_plot <- ggplot(data=data, aes(x=bird, y=Abundance, fill=Order)) + 
+  facet_wrap(~site, scales = "free")
+barplotorder<-spatial_plot + geom_bar(aes(), stat="identity", position="fill") + 
+  ggtitle("Order Abundance at Each Site") + 
+  theme (axis.text.x = element_text(angle=90), 
+         plot.title = element_text(size = 10, face = "bold", hjust = .5)) 
+barplotorder
+```
+
+##export tiff with 300dpi
+```{r}
+ggsave(
+  filename="../figures/Figure00BarplotOrder.tiff",
+  plot = barplotorder,
+  width = 250,
+  height = 150,
+  units = c("mm"),
+  dpi = 300,
+)
+```
+
+#Differential species ID
+```{r warning=FALSE}
+# Extract abundance data (OTU table)
+abundance_data <- as.data.frame(otu_table(physeqprune))
+
+# Extract the grouping variable (site) from sample data
+site_group <- sample_data(physeqprune)$site
+
+# Ensure the grouping variable is a factor
+site_group <- as.factor(site_group)
+
+# Run SIMPER analysis
+simper_result <- simper(abundance_data, group = site_group, permutations = 100)
+
+# Extract SIMPER results for each pairwise comparison
+simper_summary <- summary(simper_result)
+
+# Extract the data frame from the list
+simper_df <- simper_summary$Preen_Cloaca
+
+# Convert the data frame to include species names
+simper_df <- as.data.frame(simper_df)
+simper_df$species <- rownames(simper_df)
+rownames(simper_df) <- NULL
+
+# Add comparison information
+simper_df$comparison <- "Preen_Cloaca"
+
+# Save SIMPER results to a CSV file
+write.csv(simper_df, "../differentialexpression/simper_results.csv", row.names = FALSE)
+
+# Extract OTU names and their contributions
+otu_contributions <- simper_df %>%
+  select(species, average, sd, ratio, ava, avb, cumsum, comparison) %>%
+  arrange(species)
+
+# Perform Mann-Whitney U Test on OTU contributions between groups
+results <- data.frame()
+
+for (otu in unique(otu_contributions$species)) {
+  # Subset the data for the current OTU
+  otu_data <- subset(otu_contributions, species == otu)
+  
+  # Perform Mann-Whitney U Test
+  test_result <- wilcox.test(otu_data$ava, otu_data$avb)
+  
+  # Store results
+  results <- rbind(results, data.frame(OTU = otu, p.value = test_result$p.value))
+}
+
+# Adjust p-values for multiple testing (optional)
+results$adj.p.value <- p.adjust(results$p.value, method = "BH")
+
+# Save Mann-Whitney results to a CSV file
+write.csv(results, "../differentialexpression/mann_whitney_results.csv", row.names = FALSE)
+
+# View significant results
+significant_results <- subset(results, adj.p.value < 0.05)
+
+# Save significant results to a CSV file
+write.csv(significant_results, "../differentialexpression/significant_results.csv", row.names = FALSE)
+
+# Print significant results
+print(significant_results)
+```
