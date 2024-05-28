@@ -129,6 +129,7 @@ track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, 
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
 head(track)
+write.csv(track, "../dada2sheets/track.csv")
 ```
 
 ##load seqtab.nochim to start here
