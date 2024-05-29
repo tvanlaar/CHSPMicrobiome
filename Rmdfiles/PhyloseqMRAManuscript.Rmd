@@ -319,7 +319,9 @@ braysite=plot_ordination(physeq, ordination, color="site") +
   theme_classic() +
   theme(strip.background = element_blank()) + stat_ellipse(aes(group=site)) + ggtitle("Bray-Curtis Dissimilarity") + theme(plot.title = element_text(size = 10, face = "bold", hjust = .5), axis.title.y = element_text(size = 10, face="bold"),
          axis.title.x = element_text(size = 10, face="bold"),) + 
-  labs(color="Site")
+  labs(color="Site") +
+  scale_color_manual(values = c("Cloaca" = "#AA4499", "Preen" = "#88CCEE"))
+
 braysite
 ```
 
@@ -380,7 +382,31 @@ ggsave(
 )
 ```
 
-##Bar plots of Abundance per individual samples in species (Order-Merge <5%)
+##Bar plots of Abundance per individual samples in site (Family-Merge <4%)
+```{r}
+physeq2 = filter_taxa(physeqprune, function(x) mean(x) > 0.04, TRUE)
+physeq3 = transform_sample_counts(physeq2, function(x) x / sum(x) )
+glom<-psmelt(physeq3)
+glom <- tax_glom(physeq3, taxrank = 'Family')
+data<-psmelt(glom)
+data$Family <- as.character(data$Family) 
+data$Family[data$Abundance < 0.04] <- "< 4% abund."
+medians <- ddply(data, ~Family, function(x) c(median=median(x$Abundance)))
+remainder <- medians[medians$median <= 0.04,]$Family
+data[data$Family %in% remainder,]$Family <- "< 4% abund."
+data$Family[data$Abundance < 0.04] <- "< 4% abund."
+spatial_plot <- ggplot(data=data, aes(x=bird, y=Abundance, fill=Family)) + 
+  facet_wrap(~site, scales = "free")
+barplotfamily<-spatial_plot + geom_bar(aes(), stat="identity", position="fill") + 
+  ggtitle("Family Abundance at Each Site") + 
+  xlab("Bird") +
+  theme (axis.text.x = element_text(angle=90),
+         axis.title.y = element_text(face="bold"),
+         axis.title.x = element_text(face="bold"),
+         plot.title = element_text(size = 10, face = "bold", hjust = .5)) 
+barplotfamily
+```
+##Bar plots of Abundance per individual samples in site (Order-Merge <5%)
 ```{r}
 physeq2 = filter_taxa(physeqprune, function(x) mean(x) > 0.05, TRUE)
 physeq3 = transform_sample_counts(physeq2, function(x) x / sum(x) )
@@ -395,7 +421,9 @@ data[data$Order %in% remainder,]$Order <- "< 5% abund."
 data$Order[data$Abundance < 0.05] <- "< 5% abund."
 spatial_plot <- ggplot(data=data, aes(x=bird, y=Abundance, fill=Order)) + 
   facet_wrap(~site, scales = "free")
-barplotorder<-spatial_plot + geom_bar(aes(), stat="identity", position="fill") + 
+barplotorder<-spatial_plot + geom_bar(aes(), stat="identity", position="fill") + scale_fill_manual(values = c("#888888", "#CC6677", "#88CCEE", "#117733", "#332288", 
+                               "#AA4499", "#44AA99", "#999933", "#882255", "#661100", 
+                               "#6699CC", "#DDCC77")) +
   ggtitle("Order Abundance at Each Site") + 
   xlab("Bird") +
   theme (axis.text.x = element_text(angle=90),
