@@ -14,7 +14,6 @@ library(vegan)
 library(dplyr)
 library(plyr)
 library(decontam)
-library(ANCOMBC) #differential taxa expression
 library(MicEco) #psvenn
 library(BiMiCo) #rmnonbac
 library(ggpubr) #statcomparemeans
@@ -56,6 +55,7 @@ contamdf.prev <- isContaminant(physeq, method="prevalence", neg="is.neg", thresh
 table(contamdf.prev$contaminant)
 head(which(contamdf.prev$contaminant))
 ```
+
 ##remove control samples
 ```{r Remove Control Samples}
 # Make phyloseq object of presence-absence in negative controls and true samples
@@ -78,6 +78,7 @@ ggplot(data=df.pa, aes(x=pa.neg, y=pa.pos, color=contaminant)) + geom_point() +
 physeq <- prune_taxa(!contamdf.prev$contaminant, physeq)
 physeq
 ```
+
 ##Remove mock community
 ```{r Remove Mock Community}
 physeq <- subset_samples(physeq, mock != "yes") 
@@ -110,7 +111,6 @@ physeq
 ##save physeq object as R file
 save(physeq, file="../RData/physeq.RData")
 ```
-
 
 ##load physeq
 ```{r Load Phyloseq Object}

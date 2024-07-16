@@ -52,6 +52,7 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,200), trimLeft=c
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
               compress=TRUE, multithread=TRUE)
 head(out)
+save(out, file="../RData/out.RData")
 ```
 
 ##learn error rates forward reads 
@@ -79,17 +80,20 @@ names(derepRs) <- sample.names
 ```{r}
 dadaFs <- dada(derepFs, err=errF, multithread=TRUE)
 dadaFs[[1]]
+save(dadaFs, file="../RData/dadaFs.RData")
 ```
 
 ##Sample Inference Reverse reads
 ```{r}
 dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
 dadaRs[[1]]
+save(dadaRs, file="../RData/dadaRs.RData")
 ```
 
 ##Merge paired reads
 ```{r}
 mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE)
+save(mergers, file="../RData/mergers.RData")
 ```
 
 ##Construct the sequence table
